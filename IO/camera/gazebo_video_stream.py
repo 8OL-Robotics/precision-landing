@@ -20,7 +20,7 @@ class Video:
         video_source (string): Udp source ip and port
     """
 
-    def __init__(self, port=5604):
+    def __init__(self, port=5600):
         """Summary
         Args:
             port (int, optional): UDP port
@@ -96,6 +96,7 @@ class Video:
             buffer=buf.extract_dup(0, buf.get_size()),
             dtype=np.uint8,
         )
+             
         return array
 
     def frame(self):
@@ -138,13 +139,19 @@ if __name__ == "__main__":
     # Create the video object
     # Add port= if is necessary to use a different one
     video = Video()
+    result = cv2.VideoWriter('solo.avi', 
+                         cv2.VideoWriter_fourcc(*'MJPG'),
+                         30, (1280,720))
 
     while True:
         # Wait for the next frame
         if not video.frame_available():
             continue
-
+        
         frame = video.frame()
+        result.write(frame)
         cv2.imshow("frame", frame)
+
         if cv2.waitKey(1) & 0xFF == ord("q"):
+            result.release()
             break
