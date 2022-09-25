@@ -1,10 +1,7 @@
 from cmath import inf
 import queue
 from time import sleep
-from transitions.extensions.asyncio import AsyncMachine
-from mavsdk import System
-from mavsdk.offboard import OffboardError, PositionNedYaw, VelocityNedYaw
-import asyncio
+from dronekit import connect,VehicleMode,mavutil,LocationLocal
 from controllers.NED_controllers import PID
 import time
 
@@ -18,82 +15,43 @@ class OffboardCommander:
         self._controller = controller
         self._estimateQueue = inputQueue
         self._connection_address = connection_address
-        self._drone = System()
+        self._drone = connect(connection_address,wait_ready=True)
 
-        self.machine = AsyncMachine(
-            model=self,
-            states=[
-                "idle",
-                "connected",
-                "offboard",
-                "armed",
-                "takeoff",
-                "scan_aruco",
-                "track_aruco_xy",
-                "track_aruco_xyz",
-            ],
-            transitions=[
-                {
-                    "trigger": "attempt_connect",
-                    "source": "idle",
-                    "dest": "connected",
-                    "before": "attempt_connection",
-                    "after": "arm_drone",
-                },
-                {
-                    "trigger": "arm",
-                    "source": "connected",
-                    "dest": "armed",
-                    "before": "arm_drone",
-                },
-                {
-                    "trigger": "activate_offboard",
-                    "source": "armed",
-                    "dest": "offboard",
-                    "before": "enable_offboard",
-                },
-                {
-                    "trigger": "stage_for_landing_attempt",
-                    "source": "offboard",
-                    "dest": "track_aruco_xy",
-                    "before": "set_stage_xy",
-                },
-                {
-                    "trigger": "follow_pad_xy",
-                    "source": "track_aruco_xy",
-                    "dest": "track_aruco_xyz",
-                    "before": "go_above_aruco"
-                },
-            ],
-            initial="idle",
-            ignore_invalid_triggers=True,
-            after_state_change="print_state",
-        )
-
-    def print_state(self):
-        print(f"State changed to {self.state}")
-
-    async def check_if_connected(self):
-        async for state in self._drone.core.connection_state():
+       
+    
+    def check_if_connected(self):
+        for state in self._drone.core.connection_state():
             if state.is_connected:
                 print(f"-- Connected to drone!")
                 break
 
-    async def attempt_connection(self):
-        await self._drone.connect(system_address=self._connection_address,)
-        print("Waiting for drone to connect...")
 
-        await self.check_if_connected()
-
-        async for health in self._drone.telemetry.health():
-            if health.is_global_position_ok and health.is_home_position_ok:
-                print("-- Global position estimate OK")
-                break
-
-    async def arm_drone(self):
+        
+    def arm_drone(self):
+        
+        while not self._drone.is_armable:
+            print(" Waiting for vehicle to initialise...")
+            time.sleep(1)
+        
+        
         print("-- Arming")
-        await self._drone.action.arm()
+        self._drone.mode = VehicleMode("GUIDED")
+        self._drone.armed = True
 
+        while not self._drone.armed:
+            print(" Waiting for arming...")
+            time.sleep(1)
+
+
+    def takeoff(self,height):
+        self._drone.simple_takeoff(height)
+           
+    def start_fsm(self):
+        self.arm_drone()
+        self.takeoff(3)
+        time.sleep(10)
+        self.precision_landing()
+    '''
     async def enable_offboard(self):
         await self._drone.offboard.set_position_ned(PositionNedYaw(0.0, 0.0, 0.0, 0.0))
         print("-- Starting offboard")
@@ -118,47 +76,118 @@ class OffboardCommander:
         final = self._estimateQueue.qsize()
 
         return not final == initial
-    async def go_above_aruco(self):
+       '''
+    def goto_position_target_local_ned(self,north, east, down):
+        """
+        Send SET_POSITION_TARGET_LOCAL_NED command to request the vehicle fly to a specified
+        location in the North, East, Down frame.
+        """
+        msg = self._drone.message_factory.set_position_target_local_ned_encode(
+            0,       # time_boot_ms (not used)
+            0, 0,    # target system, target component
+            mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, # frame
+            0b0000111111111000, # type_mask (only positions enabled)
+            north, east, 0,
+            0, 0, 0, # x, y, z velocity in m/s  (not used)
+            0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
+            0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
+        # send command to vehicle
+        self._drone.send_mavlink(msg)
+    def send_ned_velocity(self,velocity_x, velocity_y, velocity_z,yaw):
+        """
+        Move vehicle in direction based on specified velocity vectors and
+        for the specified duration.
+
+        This uses the SET_POSITION_TARGET_LOCAL_NED command with a type mask enabling only 
+        velocity components 
+        (http://dev.ardupilot.com/wiki/copter-commands-in-guided-mode/#set_position_target_local_ned).
         
+        Note that from AC3.3 the message should be re-sent every second (after about 3 seconds
+        with no message the velocity will drop back to zero). In AC3.2.1 and earlier the specified
+        velocity persists until it is canceled. The code below should work on either version 
+        (sending the message multiple times does not cause problems).
+        
+        See the above link for information on the type_mask (0=enable, 1=ignore). 
+        At time of writing, acceleration and yaw bits are ignored.
+        """
+        msg = self._drone.message_factory.set_position_target_local_ned_encode(
+            0,       # time_boot_ms (not used)
+            0, 0,    # target system, target component
+            mavutil.mavlink.MAV_FRAME_BODY_NED, # frame
+            0b0000111111000111, # type_mask (only speeds enabled)
+            0, 0, 0, # x, y, z positions (not used)
+            velocity_x, velocity_y, velocity_z, # x, y, z velocity in m/s
+            0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
+            0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
+
+        
+        
+        self._drone.send_mavlink(msg)
+
+        """
+        # for yaw
+        msg =self._drone.message_factory.command_long_encode(
+         0, 0, # target system, target component
+         mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
+         0, #confirmation
+         0 , # param 1, yaw in degrees
+         0, # param 2, yaw speed deg/s
+         1, # param 3, direction -1 ccw, 1 cw
+         0, # param 4, relative offset 1, absolute angle 0
+         0, 0, 0)
+        self._drone.send_mavlink(msg)
+        """
+
+    def send_land_message(self,x,y,z,yaw):
+        msg = self._drone.message_factory.landing_target_encode(
+            0,          # time since system boot, not used
+            0,          # target num, not used
+            mavutil.mavlink.MAV_FRAME_BODY_NED, # frame, not used
+            x,
+            y,
+            z,          # distance, in meters
+            0,          # Target x-axis size, in radians
+            0           # Target y-axis size, in radians
+        )
+            
+    def precision_landing(self):
+        
+
+
         # start PID
         controller_x = PID()
         controller_y = PID()
-        
-        z_val = -2
+        controller_yaw = PID(I=0.2)
+
+        descent_speed = 0.1
        
-        controller_z = PID(P=0.000002)
-        
         time_when_state_last_steady = 0
         
-        OFFSET_X = 50
-        OFFSET_Y = 3
-
-        ERROR_MARGIN = 50
+        
+        ERROR_MARGIN = 5
+        while not self._estimateQueue.empty():
+            self._estimateQueue.get()
+        
         while True:
             
+
+
             estimate = self._estimateQueue.get()    
             
-            if ( abs(estimate[1][0]-OFFSET_X)   <  ERROR_MARGIN and  abs(estimate[1][1]-OFFSET_Y) <  ERROR_MARGIN ):
+            if ( abs(estimate[1][0])   <  ERROR_MARGIN and  abs(estimate[1][1]) <  ERROR_MARGIN ):
                 time_when_state_last_steady = time.time()
            
-            controller_x.update(estimate[1][0] + OFFSET_X)
-            controller_y.update(estimate[1][1] + OFFSET_Y)
-
-            print("x:",estimate[1][0]," ,y:",estimate[1][1],",z:",z_val)
-
-
-            if (time.time() - time_when_state_last_steady < 1):
-                z_val+=0.004
+            controller_x.update(estimate[1][0]/100 )
+            controller_y.update(estimate[1][1]/100)
             
-            await self._drone.offboard.set_position_ned(PositionNedYaw(controller_y.output,-controller_x.output, z_val, 1.57))
+            controller_yaw.update(estimate[0][2])
+            #print("x:",estimate[1][0]," ,y:",estimate[1][1],)
 
-    async def start_fsm(self):
-        await self.attempt_connect()
-        await self.arm()
-        await self.activate_offboard()
-        await self.stage_for_landing_attempt()
-        await self.follow_pad_xy()
+            z_val = 0
+            if (time.time() - time_when_state_last_steady < 1):
+                z_val=descent_speed
 
-        print(bool)
-
-        sleep(10)
+            self.send_ned_velocity(controller_y.output,-controller_x.output,z_val,controller_yaw.output)
+            
+     
+    

@@ -1,11 +1,16 @@
 aiogrpc==1.8
+dronekit==2.9.2
+future==0.18.2
 grpcio==1.47.0
 logger-tt==1.7.0
+lxml==4.9.1
 mavsdk==1.4.1
+monotonic==1.6
 numpy==1.23.2
 opencv-contrib-python==4.6.0.66
 protobuf==4.21.5
 pycairo==1.21.0
 PyGObject==3.42.2
+pymavlink==2.4.35
 six==1.16.0
 transitions==0.8.11
