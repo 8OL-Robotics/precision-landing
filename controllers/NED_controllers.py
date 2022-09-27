@@ -4,7 +4,7 @@ class PID:
     """PID Controller
     """
 
-    def __init__(self, P=0.3, I=0.0, D=0.0, current_time=None):
+    def __init__(self, P=0.02, I=0.0, D=0.0, current_time=None):
 
         self.Kp = P
         self.Ki = I
@@ -40,7 +40,7 @@ class PID:
            Test PID with Kp=1.2, Ki=1, Kd=0.001 (test_pid.py)
         """
         error = self.SetPoint - feedback_value
-
+        print("Error :" + str(error))
         self.current_time = current_time if current_time is not None else time.time()
         delta_time = self.current_time - self.last_time
         delta_error = error - self.last_error

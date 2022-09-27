@@ -15,8 +15,7 @@ class OffboardCommander:
         self._controller = controller
         self._estimateQueue = inputQueue
         self._connection_address = connection_address
-        self._drone = connect(connection_address,wait_ready=True)
-
+        
        
     
     def check_if_connected(self):
@@ -28,7 +27,8 @@ class OffboardCommander:
 
         
     def arm_drone(self):
-        
+        self._drone = connect("udpin:0.0.0.0:14550",wait_ready=True)
+
         while not self._drone.is_armable:
             print(" Waiting for vehicle to initialise...")
             time.sleep(1)
@@ -39,8 +39,13 @@ class OffboardCommander:
         self._drone.armed = True
 
         while not self._drone.armed:
-            print(" Waiting for arming...")
-            time.sleep(1)
+                print(" Waiting for arming...")
+                time.sleep(1)
+
+
+
+        print("armed")
+        
 
 
     def takeoff(self,height):
@@ -48,7 +53,7 @@ class OffboardCommander:
            
     def start_fsm(self):
         self.arm_drone()
-        self.takeoff(3)
+        self.takeoff(5)
         time.sleep(10)
         self.precision_landing()
     '''
@@ -93,7 +98,7 @@ class OffboardCommander:
             0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
         # send command to vehicle
         self._drone.send_mavlink(msg)
-    def send_ned_velocity(self,velocity_x, velocity_y, velocity_z,yaw):
+    def send_ned_velocity(self,velocity_x, velocity_y, velocity_z,yaw_rate):
         """
         Move vehicle in direction based on specified velocity vectors and
         for the specified duration.
@@ -114,30 +119,17 @@ class OffboardCommander:
             0,       # time_boot_ms (not used)
             0, 0,    # target system, target component
             mavutil.mavlink.MAV_FRAME_BODY_NED, # frame
-            0b0000111111000111, # type_mask (only speeds enabled)
+            0b110111000111, # type_mask (only speeds enabled)
             0, 0, 0, # x, y, z positions (not used)
             velocity_x, velocity_y, velocity_z, # x, y, z velocity in m/s
             0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
-            0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
+            0, yaw_rate)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
 
         
         
         self._drone.send_mavlink(msg)
 
-        """
-        # for yaw
-        msg =self._drone.message_factory.command_long_encode(
-         0, 0, # target system, target component
-         mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
-         0, #confirmation
-         0 , # param 1, yaw in degrees
-         0, # param 2, yaw speed deg/s
-         1, # param 3, direction -1 ccw, 1 cw
-         0, # param 4, relative offset 1, absolute angle 0
-         0, 0, 0)
-        self._drone.send_mavlink(msg)
-        """
-
+       
     def send_land_message(self,x,y,z,yaw):
         msg = self._drone.message_factory.landing_target_encode(
             0,          # time since system boot, not used
@@ -159,12 +151,14 @@ class OffboardCommander:
         controller_y = PID()
         controller_yaw = PID(I=0.2)
 
-        descent_speed = 0.1
+        descent_speed = 0.2
        
         time_when_state_last_steady = 0
         
-        
-        ERROR_MARGIN = 5
+        OFFSET_X = 0
+        OFFSET_Y = 0
+
+        ERROR_MARGIN = 10
         while not self._estimateQueue.empty():
             self._estimateQueue.get()
         
@@ -177,11 +171,11 @@ class OffboardCommander:
             if ( abs(estimate[1][0])   <  ERROR_MARGIN and  abs(estimate[1][1]) <  ERROR_MARGIN ):
                 time_when_state_last_steady = time.time()
            
-            controller_x.update(estimate[1][0]/100 )
-            controller_y.update(estimate[1][1]/100)
+            controller_x.update(estimate[1][0]/100  + OFFSET_X)
+            controller_y.update(estimate[1][1]/100  + OFFSET_Y ) 
             
             controller_yaw.update(estimate[0][2])
-            #print("x:",estimate[1][0]," ,y:",estimate[1][1],)
+            print("x:",estimate[1][0]," ,y:",estimate[1][1],)
 
             z_val = 0
             if (time.time() - time_when_state_last_steady < 1):
