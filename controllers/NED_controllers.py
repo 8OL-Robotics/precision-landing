@@ -3,8 +3,9 @@ import time
 class PID:
     """PID Controller
     """
+    #def __init__(self, P=0.3, I=0.08, D=0.08, current_time=None):
 
-    def __init__(self, P=0.02, I=0.0, D=0.0, current_time=None):
+    def __init__(self, P=0.3, I=0.0, D=0.0, current_time=None):
 
         self.Kp = P
         self.Ki = I
