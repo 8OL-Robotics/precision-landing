@@ -1,4 +1,4 @@
-# precision_landing
+# precision landing
 
 A suite of python scripts to perform precision landing of a drone on an aruco marker, the PID controller, IO, estimators are all decoupled for hotswapping methods of control and sources of pose.
 
