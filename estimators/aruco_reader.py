@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 from cv2 import aruco, drawFrameAxes
 
-CALIBRATION_PICKLE_PATH = "/home/bassam/Downloads/solo_calib10_best_1.01"
+CALIBRATION_PICKLE_PATH = "/home/harsh/Desktop/precisionLanding/precision-landing/solo_calib10_best_1.01"
 #CALIBRATION_PICKLE_PATH = "/home/bassam/projects/supreme-octo-parakeet/solo_calib"
 
 

@@ -53,7 +53,7 @@ class OffboardCommander:
            
     def start_fsm(self):
         self.arm_drone()
-        self.takeoff(5)
+        self.takeoff(20)
         time.sleep(8)
         self.precision_landing()
     '''
@@ -159,7 +159,7 @@ class OffboardCommander:
         msg = self._drone.message_factory.landing_target_encode(
             0,          # time since system boot, not used
             0,          # target num, not used
-            mavutil.mavlink.MAV_FRAME_BODY_NED, # frame, not used
+            mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, # frame, not used
             x,
             y,
             z,          # distance, in meters
@@ -176,14 +176,14 @@ class OffboardCommander:
         controller_y = PID()
         controller_yaw = PID()
 
-        descent_speed = 0.4
+        descent_speed = 0.5
        
         time_when_state_last_steady = 0
         
         OFFSET_X = 0
         OFFSET_Y = 0
 
-        ERROR_MARGIN = 10
+        ERROR_MARGIN = 20
         while not self._estimateQueue.empty():
             self._estimateQueue.get()
         
@@ -193,7 +193,21 @@ class OffboardCommander:
 
             estimate = self._estimateQueue.get()    
             
-            if(abs(estimate[1][2])<12):
+            # if(abs(estimate[1][2])<60):
+            #     controller_x.setKp(0.9)
+            #     controller_y.setKp(0.9)
+            #     controller_yaw.setKp(0.9)
+
+            #     controller_x.setKi(0.0)
+            #     controller_y.setKi(0.0)
+            #     controller_yaw.setKi(0.0)
+
+            #     controller_x.setKd(-0.02)
+            #     controller_y.setKd(-0.02)
+            #     controller_yaw.setKd(-0.02)
+            #     break
+
+            if(abs(estimate[1][2])<50):
                 time.sleep(2)
                 self._drone.mode = VehicleMode("LAND")
                 break
@@ -207,7 +221,7 @@ class OffboardCommander:
             controller_y.update(estimate[1][1]/100  + OFFSET_Y ) 
             
             controller_yaw.update(estimate[0][2])
-            print("x:",estimate[1][0]," ,y:",estimate[1][1],",z:",estimate[1][2],",Yaw:",estimate[0][2])
+            # print("x:",estimate[1][0]," ,y:",estimate[1][1],",z:",estimate[1][2],",Yaw:",estimate[0][2])
             z_val = 0
             if (time.time() - time_when_state_last_steady < 3):
                 z_val=descent_speed/5
