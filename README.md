@@ -23,7 +23,5 @@ Just like the simulation setup, the 3dr solo setup also streams the aruco stream
  [![SIM](https://img.youtube.com/vi/zFaq3G3E5Ek/0.jpg)](https://www.youtube.com/watch?v=zFaq3G3E5Ek)
  
  ### Real-life demonstration on 3DR solo
- 
- [![SIM](https://img.youtube.com/vi/CtwPBNmoWCg/0.jpg)](https://www.youtube.com/watch?v=CtwPBNmoWCg)
 
  [![SIM](https://img.youtube.com/vi/YOW82ZHeRjg/0.jpg)](https://www.youtube.com/watch?v=YOW82ZHeRjg)
