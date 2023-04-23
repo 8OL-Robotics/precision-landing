@@ -1,6 +1,6 @@
 # Precision Landing
 
-Precision Landing is a collection of Python scripts that enable a drone to perform precise landings on an ArUco marker. The suite includes decoupled PID controllers, IO, and estimators that can be easily swapped out for different methods of control and sources of pose.
+This is a collection of Python scripts that enable a drone to perform precise landings on an ArUco marker. The suite includes decoupled PID controllers, IO, and estimators that can be easily swapped out for different methods of control and sources of pose.
 
 ## Flight Controller Support
 
