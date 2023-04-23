@@ -1,27 +1,34 @@
-# precision landing
+# Precision Landing
 
-A suite of python scripts to perform precision landing of a drone on an aruco marker, the PID controller, IO, estimators are all decoupled for hotswapping methods of control and sources of pose.
+Precision Landing is a collection of Python scripts that enable a drone to perform precise landings on an ArUco marker. The suite includes decoupled PID controllers, IO, and estimators that can be easily swapped out for different methods of control and sources of pose.
 
-## flight controller support 
-The main branch has code which supports the PX4 flight controller, whereas the ardupilot branch has code which supports precision landing for the ardupilot flight controller, this is because mavSDK does not support ardupilot, so for ardupilot we use dronekit
+## Flight Controller Support
 
-## simulation setup 
--  you can use a simulated drone having either the ardupilot or the PX4 flight controller, the only requirements are that there is a downward facing or gimble mounted camera, pointing downards for the duration of offboard control.
--  setup the ports appropriately for the relavant IO from the IO directory
--  run the python package
-## 3DR solo setup
-Just like the simulation setup, the 3dr solo setup also streams the aruco stream over UDP and over the same port as default gazebo cameras
- - start solo controller and drone
- - connect to solo hotspot
- - use the command `solo video acquire` to enable go pro streaming on the 3dr solo, the drone should restart.
- - use the command `nc 10.1.1.1 5502` to simulate a mobile app connected to the controller
- - run the python package
- 
- ## DEMO
- 
- ### Simulation 
- [![SIM](https://img.youtube.com/vi/zFaq3G3E5Ek/0.jpg)](https://www.youtube.com/watch?v=zFaq3G3E5Ek)
- 
- ### Real-life demonstration on 3DR solo
+The main branch of the repository supports the PX4 flight controller, while the ardupilot branch supports precision landing for the ardupilot flight controller. This is because mavSDK does not support ardupilot, so we use dronekit for ardupilot.
 
- [![SIM](https://img.youtube.com/vi/YOW82ZHeRjg/0.jpg)](https://www.youtube.com/watch?v=YOW82ZHeRjg)
+## Simulation Setup
+
+To use the simulation setup, you can use a simulated drone with either the ardupilot or the PX4 flight controller. The only requirement is that the drone has a downward-facing or gimbal-mounted camera that is pointing downwards during offboard control. Additionally, you need to set up the ports appropriately for the relevant IO from the IO directory and run the Python package.
+
+## 3DR Solo Setup
+
+Similar to the simulation setup, the 3DR Solo setup streams the ArUco stream over UDP and over the same port as default gazebo cameras. To set up the 3DR Solo, follow these steps:
+- Start the Solo controller and drone
+- Connect to the Solo hotspot
+- Use the command `solo video acquire` to enable GoPro streaming on the 3DR Solo. The drone should restart.
+- Use the command `nc 10.1.1.1 5502` to simulate a mobile app connected to the controller
+- Run the Python package
+
+## Demo
+
+### Simulation
+
+Check out this video of Precision Landing in action in a simulated environment:
+
+[![SIM](https://img.youtube.com/vi/zFaq3G3E5Ek/0.jpg)](https://www.youtube.com/watch?v=zFaq3G3E5Ek)
+
+### Real-Life Demonstration on 3DR Solo
+
+Check out this video of Precision Landing in action on a 3DR Solo:
+
+[![REAL](https://img.youtube.com/vi/YOW82ZHeRjg/0.jpg)](https://www.youtube.com/watch?v=YOW82ZHeRjg)
