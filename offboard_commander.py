@@ -8,6 +8,7 @@ import asyncio
 from controllers.NED_controllers import PID
 import time
 
+
 class OffboardCommander:
     _controller = None
     _estimateQueue = None
@@ -62,7 +63,7 @@ class OffboardCommander:
                     "trigger": "follow_pad_xy",
                     "source": "track_aruco_xy",
                     "dest": "track_aruco_xyz",
-                    "before": "go_above_aruco"
+                    "before": "go_above_aruco",
                 },
             ],
             initial="idle",
@@ -80,7 +81,9 @@ class OffboardCommander:
                 break
 
     async def attempt_connection(self):
-        await self._drone.connect(system_address=self._connection_address,)
+        await self._drone.connect(
+            system_address=self._connection_address,
+        )
         print("Waiting for drone to connect...")
 
         await self.check_if_connected()
@@ -118,39 +121,42 @@ class OffboardCommander:
         final = self._estimateQueue.qsize()
 
         return not final == initial
+
     async def go_above_aruco(self):
-        
         # start PID
         controller_x = PID()
         controller_y = PID()
-        
+
         z_val = -2
-       
+
         controller_z = PID(P=0.000002)
-        
+
         time_when_state_last_steady = 0
-        
+
         OFFSET_X = 50
         OFFSET_Y = 3
 
         ERROR_MARGIN = 50
         while True:
-            
-            estimate = self._estimateQueue.get()    
-            
-            if ( abs(estimate[1][0]-OFFSET_X)   <  ERROR_MARGIN and  abs(estimate[1][1]-OFFSET_Y) <  ERROR_MARGIN ):
+            estimate = self._estimateQueue.get()
+
+            if (
+                abs(estimate[1][0] - OFFSET_X) < ERROR_MARGIN
+                and abs(estimate[1][1] - OFFSET_Y) < ERROR_MARGIN
+            ):
                 time_when_state_last_steady = time.time()
-           
+
             controller_x.update(estimate[1][0] + OFFSET_X)
             controller_y.update(estimate[1][1] + OFFSET_Y)
 
-            print("x:",estimate[1][0]," ,y:",estimate[1][1],",z:",z_val)
+            print("x:", estimate[1][0], " ,y:", estimate[1][1], ",z:", z_val)
 
+            if time.time() - time_when_state_last_steady < 1:
+                z_val += 0.004
 
-            if (time.time() - time_when_state_last_steady < 1):
-                z_val+=0.004
-            
-            await self._drone.offboard.set_position_ned(PositionNedYaw(controller_y.output,-controller_x.output, z_val, 1.57))
+            await self._drone.offboard.set_position_ned(
+                PositionNedYaw(controller_y.output, -controller_x.output, z_val, 1.57)
+            )
 
     async def start_fsm(self):
         await self.attempt_connect()

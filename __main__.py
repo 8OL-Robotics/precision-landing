@@ -16,7 +16,6 @@ def start_aruco_reader(inputQueue):
 
 
 if __name__ == "__main__":
-
     inputq = Queue()
     inputProcess = Process(target=start_aruco_reader, args=(inputq,))
     inputProcess.start()

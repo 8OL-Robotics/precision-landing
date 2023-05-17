@@ -22,7 +22,6 @@ def rvectvec_to_euler(rvec, tvec):
 
 class ArucoReader:
     def __init__(self, q, mode="simulation") -> None:
-
         if mode == "simulation":
             self._video_stream = Video()
 
@@ -57,8 +56,23 @@ class ArucoReader:
             [[0.6, 6.55, 0.0], [3.2, 6.55, 0.0], [3.2, 3.85, 0.0], [0.6, 3.85, 0.0]],
         ]
         """
-        coordinate_array = [[[9.6, -74.6, 0.0], [9.6, -34.0, 0.0], [-31.0, -34.0, 0.0], [-31.0, -74.6, 0.0]], [[29.9, -9.9, 0.0], [29.9, 11.1, 0.0], [8.9, 11.1, 0.0], [8.9, -9.9, 0.0]], [[30.0, 29.4, 0.0], [30.0, 66.0, 0.0], [-6.6, 66.0, 0.0], [-6.6, 29.4, 0.0]], [[2.4, -2.4, 0.0], [2.4, 2.6, 0.0], [-2.6, 2.6, 0.0], [-2.6, -2.4, 0.0]]]
-        
+        coordinate_array = [
+            [
+                [9.6, -74.6, 0.0],
+                [9.6, -34.0, 0.0],
+                [-31.0, -34.0, 0.0],
+                [-31.0, -74.6, 0.0],
+            ],
+            [[29.9, -9.9, 0.0], [29.9, 11.1, 0.0], [8.9, 11.1, 0.0], [8.9, -9.9, 0.0]],
+            [
+                [30.0, 29.4, 0.0],
+                [30.0, 66.0, 0.0],
+                [-6.6, 66.0, 0.0],
+                [-6.6, 29.4, 0.0],
+            ],
+            [[2.4, -2.4, 0.0], [2.4, 2.6, 0.0], [-2.6, 2.6, 0.0], [-2.6, -2.4, 0.0]],
+        ]
+
         print(coordinate_array)
         coordinate_array = np.asarray(coordinate_array).astype(np.float32)
         self.board = cv2.aruco.Board_create(
@@ -66,7 +80,6 @@ class ArucoReader:
         )
 
     def start_reading(self):
-
         ## generation ofa aruco board
         # fourcc = cv2.VideoWriter_fourcc(*'XVID')
         # result = cv2.VideoWriter('output.avi',fourcc, 20.0, (2160,3840))
@@ -77,7 +90,6 @@ class ArucoReader:
         print("AR: Started Aruco Reader")
 
         while True:
-
             if not self._video_stream.frame_available():
                 continue
 
@@ -100,8 +112,7 @@ class ArucoReader:
                 rvec, tvec = [], []
             # print(tvec)
             if retval:
-                
-                #print(f"AR: Received pose estimate {rvec,tvec}")
+                # print(f"AR: Received pose estimate {rvec,tvec}")
 
                 self._outqueue.put([rvec, tvec])
                 frame = drawFrameAxes(

@@ -1,11 +1,10 @@
 import time
 
+
 class PID:
-    """PID Controller
-    """
+    """PID Controller"""
 
     def __init__(self, P=0.02, I=0.0, D=0, current_time=None):
-
         self.Kp = P
         self.Ki = I
         self.Kd = D
@@ -45,13 +44,13 @@ class PID:
         delta_time = self.current_time - self.last_time
         delta_error = error - self.last_error
 
-        if (delta_time >= self.sample_time):
+        if delta_time >= self.sample_time:
             self.PTerm = self.Kp * error
             self.ITerm += error * delta_time
 
-            if (self.ITerm < -self.windup_guard):
+            if self.ITerm < -self.windup_guard:
                 self.ITerm = -self.windup_guard
-            elif (self.ITerm > self.windup_guard):
+            elif self.ITerm > self.windup_guard:
                 self.ITerm = self.windup_guard
 
             self.DTerm = 0.0
